@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#3a2210">
+<title>守護者的失落寶藏 · 最終封印</title>
+<style>
+@font-face{font-family:"Kai";src:url(data:font/woff2;base64,{{FONT_KAI_R}}) format("woff2");font-weight:400;font-display:block}
+@font-face{font-family:"Kai";src:url(data:font/woff2;base64,{{FONT_KAI_B}}) format("woff2");font-weight:700;font-display:block}
+@font-face{font-family:"Cinzel";src:url(data:font/woff2;base64,{{FONT_CINZEL}}) format("woff2");font-weight:700;font-display:block}
+:root{--img-bg:url({{IMG_BG}});--img-parch:url({{IMG_PARCH}});--ink:#3a2210;--red:#b83221;--cream:#fff1d0;--rule:#e2b664}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#2b1a0c;color:var(--ink);font-family:"Kai","PingFang TC","Microsoft JhengHei",serif;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer;outline:none}
+img{-webkit-user-drag:none;user-select:none}
+#backdrop{position:fixed;inset:-60px;background:#2b1a0c var(--img-bg) center/cover;filter:blur(20px) brightness(.6) sepia(.3)}
+#stage{position:absolute;left:0;top:0;transform-origin:0 0;overflow:hidden;opacity:0;transition:opacity .7s;background:#efe0bd}
+#stage.shown{opacity:1}
+#bg{position:absolute;inset:0;background:var(--img-bg) center/cover;animation:breathe 26s ease-in-out infinite alternate}
+@keyframes breathe{from{transform:scale(1.005)}to{transform:scale(1.04) translateY(-5px)}}
+#vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 82% 80% at 50% 52%,rgba(0,0,0,0) 58%,rgba(104,58,16,.34) 100%)}
+canvas{position:absolute;left:0;top:0;pointer-events:none}
+
+/* ---------- card-style frame: triple red-brown lines + compass corners ---------- */
+#frame{position:absolute;inset:14px;border:1.6px solid rgba(112,36,20,.8);pointer-events:none;z-index:20}
+#frame::before{content:"";position:absolute;inset:4px;border:3px solid rgba(112,36,20,.85)}
+#frame::after{content:"";position:absolute;inset:11px;border:1.6px solid rgba(112,36,20,.8)}
+#frame i{position:absolute;width:82px;height:82px;background:url({{IMG_COMPASS}}) center/contain no-repeat;filter:drop-shadow(0 2px 2px rgba(60,30,10,.25))}
+#frame .tl{left:-35.5px;top:-35.5px}#frame .tr{right:-35.5px;top:-35.5px}#frame .bl{left:-35.5px;bottom:-35.5px}#frame .br{right:-35.5px;bottom:-35.5px}
+
+/* ---------- ribbons (same shape and colours as the clue-card title ribbons) ---------- */
+.ribbon{position:relative;display:block}
+.ribbon svg{display:block;overflow:visible}
+.ribbon>span{position:absolute;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--cream);font-weight:700;white-space:nowrap;text-shadow:0 2px 0 rgba(60,14,6,.6)}
+
+/* ---------- title / banner ---------- */
+#title,#banner{position:absolute;left:0;right:0;display:flex;flex-direction:column;align-items:center;pointer-events:none;z-index:12;transition:opacity .7s,transform .7s}
+.hdr{font-size:22px;font-weight:700;letter-spacing:.16em;padding-left:.16em;color:#8a2614;margin-bottom:2px;text-shadow:0 0 3px #fdf3da,0 0 8px #fdf3da,0 0 14px #fdf3da}
+#title.away,#stage:not(.started) #title{opacity:0;transform:translateY(-36px)}
+#banner{opacity:0;transform:scale(.5) rotate(-4deg);transition:opacity .5s,transform .9s cubic-bezier(.3,1.6,.5,1)}
+#banner.show{opacity:1;transform:none}
+
+/* ---------- magic circle (ink-drawn, glows gold) ---------- */
+#circle{position:absolute;perspective:1100px;pointer-events:none;opacity:0;transition:opacity 1.4s}
+#stage.shown #circle{opacity:.8}
+#circle .tilt{width:100%;height:100%;transform:rotateX(76deg)}
+#circle svg{width:100%;height:100%;overflow:visible;color:#8b5a20;animation:spin 90s linear infinite;filter:drop-shadow(0 0 3px rgba(255,240,180,.95)) drop-shadow(0 0 10px rgba(255,214,120,.6));transition:color .4s}
+#circle.bad svg{color:#c0301e;filter:drop-shadow(0 0 4px rgba(255,140,110,.95)) drop-shadow(0 0 14px rgba(255,80,50,.6))}
+#circle.gold svg{color:#e3a01c;animation-duration:10s;filter:drop-shadow(0 0 5px rgba(255,240,160,1)) drop-shadow(0 0 24px rgba(255,196,70,.85))}
+#stage.solved #circle{opacity:1}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- chest ---------- */
+#rays,#glow{position:absolute;border-radius:50%;pointer-events:none;opacity:0;transition:opacity 1.3s}
+#rays{background:repeating-conic-gradient(rgba(255,204,92,.78) 0deg 6deg,rgba(255,236,170,0) 6deg 15deg);-webkit-mask-image:radial-gradient(closest-side,#000 16%,rgba(0,0,0,.75) 48%,transparent 100%);mask-image:radial-gradient(closest-side,#000 16%,rgba(0,0,0,.75) 48%,transparent 100%);animation:spin 46s linear infinite}
+#glow{background:radial-gradient(closest-side,rgba(255,252,225,.95),rgba(255,222,120,.5) 45%,rgba(255,200,80,0) 100%)}
+#stage.solved #rays{opacity:1}
+#stage.solved #glow{opacity:.9}
+#chestShadow{position:absolute;border-radius:50%;background:radial-gradient(closest-side,rgba(70,42,14,.5),rgba(70,42,14,0));pointer-events:none;transition:opacity .5s}
+#chestBox{position:absolute;transform-origin:50% 100%;pointer-events:none}
+#chestBox img{position:absolute;left:0;top:0;width:100%;height:100%}
+#chestClosed{filter:drop-shadow(0 8px 6px rgba(70,40,10,.35));transition:opacity .5s}
+#chestOpen{opacity:0;transition:opacity .5s}
+#stage.solved #chestOpen{opacity:1;animation:treasureGlow 2.8s ease-in-out infinite}
+#stage.solved #chestClosed{opacity:0}
+@keyframes treasureGlow{0%,100%{filter:drop-shadow(0 8px 6px rgba(70,40,10,.35)) drop-shadow(0 0 16px rgba(255,214,110,.5))}50%{filter:drop-shadow(0 8px 6px rgba(70,40,10,.35)) drop-shadow(0 0 38px rgba(255,214,110,.95))}}
+#chestBox.pre,#chestShadow.pre{opacity:0}
+#chestBox.drop{animation:dropIn 1s cubic-bezier(.3,0,.7,1) both}
+@keyframes dropIn{0%{transform:translateY(-640px);opacity:0}8%{opacity:1}55%{transform:translateY(0) scale(1.04,.94)}66%{transform:translateY(-34px) scale(.98,1.03)}78%{transform:translateY(0) scale(1.015,.985)}89%{transform:translateY(-9px)}100%{transform:translateY(0)}}
+#chestBox.rumble{animation:rumble .11s linear infinite}
+@keyframes rumble{0%{transform:translate(0,0)}25%{transform:translate(-4px,1px) rotate(-.5deg)}50%{transform:translate(3px,-1px) rotate(.4deg)}75%{transform:translate(-2px,0) rotate(-.3deg)}100%{transform:translate(0,0)}}
+
+/* ---------- chains ---------- */
+#chains{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:visible;transition:opacity .6s;filter:drop-shadow(0 4px 2px rgba(50,28,8,.35))}
+#chains.pre{opacity:0}
+#chains.rattle{animation:rattle .5s linear}
+@keyframes rattle{0%,100%{transform:translate(0,0)}20%{transform:translate(-4px,2px)}40%{transform:translate(4px,-2px)}60%{transform:translate(-3px,1px)}80%{transform:translate(2px,0)}}
+
+/* ---------- the big padlock ---------- */
+#lock{position:absolute;width:600px;height:570px;z-index:6}
+#lockScale{position:absolute;inset:0;transform-origin:50% 0}
+#lockInner{position:absolute;inset:0;transform-origin:50% 0;animation:sway 5.5s ease-in-out infinite}
+@keyframes sway{0%,100%{transform:rotate(-1.1deg)}50%{transform:rotate(1.1deg)}}
+#lock.pre #lockInner{animation:none;opacity:0}
+#lock.enter #lockInner{animation:swingIn 1.4s cubic-bezier(.2,.8,.3,1) both}
+@keyframes swingIn{0%{opacity:0;transform:translateY(-320px) rotate(0)}32%{opacity:1;transform:translateY(0) rotate(8deg)}52%{transform:rotate(-5deg)}70%{transform:rotate(2.8deg)}85%{transform:rotate(-1.2deg)}100%{transform:rotate(0)}}
+#lock.shake #lockInner{animation:lockShake .65s cubic-bezier(.36,.07,.19,.97)}
+@keyframes lockShake{10%,90%{transform:translateX(-3px) rotate(-.8deg)}20%,80%{transform:translateX(7px) rotate(1.6deg)}30%,50%,70%{transform:translateX(-14px) rotate(-3deg)}40%,60%{transform:translateX(14px) rotate(3deg)}}
+#lock.drop{transition:transform 1.05s cubic-bezier(.55,0,.9,.55),opacity .8s .3s;transform:translateY(780px) rotate(28deg);opacity:0}
+#shackle{position:absolute;left:128px;top:-8px;width:344px;height:294px;transform-origin:313px 198px;transition:transform .55s cubic-bezier(.3,1.8,.5,1);filter:drop-shadow(0 6px 4px rgba(60,34,10,.28))}
+#lock.open #shackle{transform:translateY(-64px) rotate(11deg)}
+#body{position:absolute;left:0;top:190px;width:600px;height:380px;background:url({{IMG_LOCK}}) center/100% 100% no-repeat;filter:drop-shadow(0 14px 10px rgba(60,34,10,.38))}
+#seal{position:absolute;left:-44px;top:136px;width:122px;height:122px;transform:rotate(-12deg);filter:drop-shadow(0 4px 3px rgba(60,20,10,.4));z-index:3;pointer-events:none}
+#lockRibbon{position:absolute;z-index:2;pointer-events:none}
+#dials{position:absolute;left:50px;right:50px;top:46px;display:flex;justify-content:space-between}
+.dial{width:104px;display:flex;flex-direction:column;align-items:center}
+.arrow{width:104px;height:40px;display:flex;align-items:center;justify-content:center;color:#4a2a12;transition:transform .1s,color .2s}
+.arrow svg{width:42px;height:42px;stroke-width:3.4}
+.arrow:hover{color:#a3271a}
+.arrow:active{transform:scale(.8)}
+.win{position:relative;width:104px;height:156px;border-radius:16px;overflow:hidden;cursor:ns-resize;touch-action:none;border:3.5px solid var(--ink);background:linear-gradient(180deg,#d4bc8e 0%,#f2e3c3 26%,#fdf7e7 50%,#f2e3c3 74%,#d4bc8e 100%);box-shadow:0 0 0 4px var(--tc),0 0 0 7px var(--ink),0 5px 0 4px rgba(58,34,16,.22);transition:box-shadow .25s}
+.strip{position:absolute;left:0;top:0;width:100%;will-change:transform}
+.strip span{display:block;height:92px;line-height:102px;text-align:center;font-family:"Cinzel",serif;font-weight:700;font-size:80px;color:var(--ink);transition:color .3s}
+.win::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(212,188,142,.95) 0%,rgba(242,227,195,0) 30%,rgba(242,227,195,0) 70%,rgba(212,188,142,.95) 100%),linear-gradient(100deg,rgba(255,255,255,0) 28%,rgba(255,255,255,.35) 46%,rgba(255,255,255,0) 60%)}
+.dial.focus .win{box-shadow:0 0 0 4px var(--tc),0 0 0 7px var(--ink),0 0 20px 9px rgba(255,214,100,.95)}
+.dial.bad .win{animation:bad .75s}
+@keyframes bad{30%,65%{box-shadow:0 0 0 4px #e0301c,0 0 0 7px var(--ink),0 0 24px 9px rgba(230,50,30,.85)}}
+.dial.ok .win{box-shadow:0 0 0 4px var(--tc),0 0 0 7px var(--ink),0 0 30px 13px rgba(255,214,90,1)}
+.dial.ok .strip span{color:var(--td)}
+.tname{margin-top:8px;font-weight:700;font-size:21px;line-height:1;padding:8px 14px 7px;border-radius:12px;background:var(--tc);color:var(--to);letter-spacing:.08em;border:2.4px solid #32180a;box-shadow:inset 0 0 0 3px var(--tc),inset 0 0 0 4.6px var(--tr),0 3px 0 rgba(50,24,10,.25)}
+
+/* ---------- buttons ---------- */
+#unlockBtn{position:absolute;z-index:14;animation:pulse 2.4s ease-in-out infinite;transition:opacity .5s}
+#unlockBtn>span svg{width:34px;height:34px;stroke-width:2.6}
+#unlockBtn:active{transform:translateY(3px) scale(.97)}
+#unlockBtn.ready{animation:pulseStrong 1.1s ease-in-out infinite}
+@keyframes pulse{0%,100%{filter:drop-shadow(0 5px 0 rgba(58,20,8,.3))}50%{filter:drop-shadow(0 5px 0 rgba(58,20,8,.3)) drop-shadow(0 0 14px rgba(255,214,110,.9))}}
+@keyframes pulseStrong{0%,100%{filter:drop-shadow(0 5px 0 rgba(58,20,8,.3)) drop-shadow(0 0 6px rgba(255,220,110,.7));transform:scale(1)}50%{filter:drop-shadow(0 5px 0 rgba(58,20,8,.3)) drop-shadow(0 0 24px rgba(255,214,90,1));transform:scale(1.07)}}
+#unlockBtn.pre,#unlockBtn.hide{opacity:0;pointer-events:none}
+.tagbtn{display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--cream);background:var(--red);border:2.6px solid #3a1408;box-shadow:inset 0 0 0 4px var(--red),inset 0 0 0 6px var(--rule),0 5px 0 rgba(58,20,8,.35);text-shadow:0 2px 0 rgba(60,14,6,.6);transition:transform .12s}
+.tagbtn:active{transform:translateY(3px)}
+
+/* ---------- spirit / speech bubble ---------- */
+#spirit{position:absolute;cursor:pointer;transition:opacity 1.1s;filter:drop-shadow(0 6px 5px rgba(60,34,10,.32));z-index:8}
+#spirit img{width:100%;display:block;pointer-events:none;animation:float 4.6s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-12px) rotate(1.2deg)}}
+#spirit.hop img{animation:hop .75s cubic-bezier(.3,1.6,.5,1)}
+@keyframes hop{0%{transform:translateY(0)}40%{transform:translateY(-50px) rotate(-5deg) scale(1.04)}100%{transform:translateY(0)}}
+#spirit.pre{opacity:0;pointer-events:none}
+#bubble{position:absolute;padding:16px 24px 18px;border-radius:26px;font-size:25px;line-height:1.55;min-height:70px;word-break:keep-all;overflow-wrap:anywhere;color:var(--ink);background:#f3e4c2 var(--img-parch) center/cover;border:3px solid var(--ink);box-shadow:0 7px 0 rgba(58,34,16,.2);transition:opacity .35s;z-index:9}
+#bubble .tail{position:absolute;display:none;overflow:visible}
+#bubble[data-side=bottom]{transform-origin:20% 100%}
+#bubble[data-side=left]{transform-origin:0 30%}
+#bubble[data-side=bottom] .tb{display:block;left:var(--tail,64px);bottom:-35px;width:40px;height:38px}
+#bubble[data-side=left] .tl{display:block;left:-35px;top:var(--tail,40px);width:38px;height:40px}
+#bubble.pre{opacity:0}
+#bubble.pop{animation:bubblePop .45s cubic-bezier(.3,1.7,.5,1)}
+@keyframes bubblePop{from{transform:scale(.82)}to{transform:scale(1)}}
+
+/* ---------- virtues: rope-ring medallions like the clue cards ---------- */
+#virtues{position:absolute;left:0;right:0;display:flex;justify-content:center;gap:40px;pointer-events:none;z-index:11}
+.virtue{display:flex;flex-direction:column;align-items:center;opacity:0;transform:scale(.3) translateY(40px);transition:opacity .4s,transform .65s cubic-bezier(.3,1.7,.5,1)}
+.virtue.show{opacity:1;transform:none}
+.virtue .medal{width:126px;height:126px;display:flex;align-items:center;justify-content:center;color:#5a3414;background:url({{IMG_MEDAL}}) center/contain no-repeat;filter:drop-shadow(0 6px 4px rgba(60,34,10,.35))}
+.virtue .medal svg{width:54px;height:54px;stroke-width:2.2}
+.virtue b{margin-top:-8px;font-size:24px;line-height:1;letter-spacing:.2em;padding:7px 10px 6px 15px;border-radius:12px;background:var(--red);color:var(--cream);border:2.4px solid #3a1408;box-shadow:inset 0 0 0 3px var(--red),inset 0 0 0 4.6px var(--rule),0 3px 0 rgba(50,24,10,.28)}
+
+/* ---------- misc ---------- */
+#flash{position:absolute;inset:0;pointer-events:none;opacity:0;z-index:15;background:radial-gradient(circle at var(--fx,50%) var(--fy,45%),rgba(255,253,236,.95),rgba(255,238,170,.55) 28%,rgba(255,226,140,0) 70%)}
+#flash.go{animation:flash 1.5s ease-out}
+@keyframes flash{0%{opacity:0}10%{opacity:1}100%{opacity:0}}
+#controls{position:absolute;top:34px;right:92px;display:flex;gap:12px;z-index:40}
+.ctl{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink);background:#f3e4c2 var(--img-parch) center/cover;border:2.6px solid var(--ink);box-shadow:0 4px 0 rgba(58,34,16,.25)}
+.ctl svg{width:26px;height:26px;stroke-width:2.3}
+.ctl:active{transform:translateY(2px)}
+#resetBtn{position:absolute;right:92px;bottom:34px;display:flex;align-items:center;gap:10px;padding:8px 18px 8px 9px;border-radius:30px;color:var(--ink);font-weight:700;font-size:19px;background:#f3e4c2 var(--img-parch) center/cover;border:2.6px solid var(--ink);box-shadow:0 4px 0 rgba(58,34,16,.25);opacity:0;pointer-events:none;transition:opacity .6s;z-index:40;touch-action:none}
+#resetBtn.show{opacity:1;pointer-events:auto}
+#resetBtn .ring{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient(var(--red) calc(var(--p,0) * 1%),rgba(58,34,16,.18) 0)}
+#resetBtn .ring span{width:28px;height:28px;border-radius:50%;background:#f8eed8;display:flex;align-items:center;justify-content:center}
+#resetBtn svg{width:16px;height:16px;stroke-width:2.6}
+
+/* ---------- intro scroll ---------- */
+#intro{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:30;background:radial-gradient(ellipse at center,rgba(50,30,10,.2),rgba(36,20,6,.72));transition:opacity 1s}
+#intro.hide{opacity:0;pointer-events:none}
+#scrollWrap{transform-origin:50% 50%}
+#scroll{position:relative;width:578px;height:862px;background:url({{IMG_SCROLL}}) center/100% 100% no-repeat;filter:drop-shadow(0 26px 34px rgba(30,16,4,.6));transform-origin:50% 7%;animation:unroll 1.3s cubic-bezier(.2,.9,.25,1) both}
+@keyframes unroll{0%{transform:scaleY(.07);opacity:0}25%{opacity:1}100%{transform:scaleY(1);opacity:1}}
+#intro.hide #scroll{animation:rollup .75s cubic-bezier(.6,0,.85,.4) both}
+@keyframes rollup{from{transform:scaleY(1);opacity:1}to{transform:scaleY(.05);opacity:0}}
+#scrollText{position:absolute;left:18%;right:18%;top:15%;bottom:22%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#3e230e}
+#scrollText .k{font-size:17px;letter-spacing:.22em;color:#7a5530}
+#scrollText h2{font-size:36px;color:#7a1c0b;letter-spacing:.04em;margin:10px 0 4px;line-height:1.2;white-space:nowrap}
+#scrollText .t{font-size:21px;letter-spacing:.3em;padding-left:.3em;color:#6a4626;margin-bottom:20px}
+#scrollText .p{font-size:20.5px;line-height:1.9;color:#4a2a12;white-space:nowrap}
+#startBtn{margin-top:28px;width:236px;height:64px;border-radius:16px;font-size:27px;letter-spacing:.3em;padding-left:.3em;animation:pulse 2.2s ease-in-out infinite}
+</style>
+</head>
+<body>
+<div id="backdrop"></div>
+<div id="stage">
+  <div id="bg"></div>
+  <canvas id="fxBack"></canvas>
+  <div id="vignette"></div>
+  <div id="circle"><div class="tilt"></div></div>
+  <div id="rays"></div>
+  <div id="glow"></div>
+  <div id="chestShadow" class="pre"></div>
+  <div id="chestBox" class="pre"><img id="chestClosed" alt="寶箱" src="{{IMG_CHEST_CLOSED}}"><img id="chestOpen" alt="打開的寶箱" src="{{IMG_CHEST_OPEN}}"></div>
+  <svg id="chains" class="pre" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div id="lock" class="pre"><div id="lockScale"><div id="lockInner">
+    <img id="shackle" alt="" src="{{IMG_SHACKLE}}">
+    <div id="body"><div id="dials"></div></div>
+    <div id="lockRibbon" class="ribbon" data-bw="236" data-bh="46" data-fs="25"><span>守護者封印</span></div>
+    <img id="seal" alt="" src="{{IMG_SEAL}}">
+  </div></div></div>
+  <button id="unlockBtn" class="ribbon pre" data-bw="190" data-bh="64" data-fs="36" aria-label="開鎖"><span><i class="ic"></i>開鎖</span></button>
+  <div id="spirit" class="pre" role="button" aria-label="森林守護精靈"><img alt="" src="{{IMG_SPIRIT}}"></div>
+  <div id="bubble" class="pre" data-side="bottom"><p id="bubbleText"></p>
+    <svg class="tail tb" viewBox="0 0 40 38"><polygon points="0,0 40,0 6,38" fill="#f0e0bb"/><path d="M1 1 L6 37 L39 1" fill="none" stroke="#3a2210" stroke-width="3" stroke-linejoin="round"/></svg>
+    <svg class="tail tl" viewBox="0 0 38 40"><polygon points="38,0 38,40 0,6" fill="#f0e0bb"/><path d="M37 1 L1 6 L37 39" fill="none" stroke="#3a2210" stroke-width="3" stroke-linejoin="round"/></svg>
+  </div>
+  <div id="title"><div class="hdr">第 82 旅幼童軍 · 最終封印</div><div class="ribbon" data-bw="560" data-bh="70" data-fs="42"><span>守護者的失落寶藏</span></div></div>
+  <div id="banner"><div class="hdr">封印解除 · 四隊勇士合力成功</div><div class="ribbon" data-bw="640" data-bh="76" data-fs="46"><span>傳奇寶藏重見天日！</span></div></div>
+  <div id="virtues"></div>
+  <canvas id="fxFront"></canvas>
+  <div id="flash"></div>
+  <div id="frame"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>
+  <div id="controls"><button class="ctl" id="muteBtn" aria-label="聲音開關"></button><button class="ctl" id="fsBtn" aria-label="全螢幕"></button></div>
+  <button id="resetBtn" aria-label="按住重新上鎖"><span class="ring"><span class="ic"></span></span>按住重新上鎖</button>
+  <div id="intro"><div id="scrollWrap"><div id="scroll"><div id="scrollText">
+    <div class="k">第 82 旅幼童軍 · 尋寶大冒險</div>
+    <h2>守護者的失落寶藏</h2>
+    <div class="t">最終封印</div>
+    <p class="p">「唯有 4 隊並肩作戰，<br>集齊 4 個隱藏在各處的神秘符號，<br>並通過三大考驗，解開最終謎題，<br>才能讓失落的寶藏重見天日！」</p>
+    <button id="startBtn" class="tagbtn">開始解封</button>
+  </div></div></div></div>
+</div>
+<script>
+(() => {
+'use strict';
+/* =====  settings  =====  (passcode can also be overridden with  ?code=1234  in the address) */
+const PASSCODE = ((new URLSearchParams(location.search).get('code') || '{{PASSCODE}}').replace(/\D/g, '') + '0000').slice(0, 4);
+const TEAMS = {{TEAMS}};
+const CHEST = {{CHEST_META}};
+const ICONS = {{ICONS}};
+const SIGNS = {{SIGNS}};
+
+const INTRO_MSG = '四隊的勇士們，歡迎來到最終封印！每隊轉動自己顏色的轉輪，輸入解開的數字，再按「開鎖」。';
+const WRONG = ['咔嚓……封印紋絲不動！再核對一下你們的數字吧。', '不對喔！是不是有一個符號翻譯錯了？',
+               '封印還牢牢鎖著……四隊再確認一次答案！', '差一點點！每隊檢查一下自己的轉輪吧。'];
+const HINTS = ['提示：把英文數字換成阿拉伯數字，例如 TWO 就輸入 2。',
+               '提示：轉輪的次序是 紅 → 藍 → 綠 → 黃，每隊只負責自己顏色的一格。',
+               '提示：幽靈符號代表「空格」，它不是字母喔！'];
+const TIPS = ['每隊轉動自己顏色的轉輪，輸入你們解開的數字。', '忘了怎樣解碼？對照解碼卡，把符號翻譯成英文字母吧！',
+              '英文數字要換成阿拉伯數字喔，例如 TWO → 2。', '四隊都準備好了嗎？一起按下「開鎖」！'];
+const WIN_TALK = ['勇氣、智慧、團結與榮譽，就是最珍貴的寶藏！', '第 82 旅的勇士們，你們真了不起！', '謝謝你們找回傳奇寶藏！'];
+const VIRTUES = [['flame', '勇氣'], ['lightbulb', '智慧'], ['handshake', '團結'], ['award', '榮譽']];
+
+/* stage layouts: chest {w, cx = visual centre, bottom}, lock {cx, top = top edge of the lock body, s = scale} */
+const LAYOUTS = {
+  L: {W: 1600, H: 900, chest: {w: 660, cx: 790, bottom: 682}, lock: {cx: 800, top: 445, s: 1}, btn: {x: 1296, y: 612},
+      title: 18, spirit: {x: 40, y: 468, w: 318}, bubble: {x: 34, bottom: 462, w: 462, side: 'bottom', tail: 232},
+      virtues: 712, scroll: 1},
+  P: {W: 900, H: 1600, chest: {w: 760, cx: 450, bottom: 1190}, lock: {cx: 450, top: 1004, s: 1.18}, btn: {x: 450, y: 1522},
+      title: 48, spirit: {x: 22, y: 196, w: 292}, bubble: {x: 338, top: 222, w: 538, side: 'left', tail: 104},
+      virtues: 1236, scroll: 1.32},
+};
+const LOCK_W = 600, SHACKLE_VIS = 190;
+
+/* =====  helpers  ===== */
+const $ = s => document.querySelector(s);
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const icon = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]}</svg>`;
+const restart = (el, c) => { el.classList.remove(c); void el.getBoundingClientRect(); el.classList.add(c); };
+const stage = $('#stage'), lockEl = $('#lock'), chestBox = $('#chestBox'), chainsSvg = $('#chains'), circleEl = $('#circle');
+const unlockBtn = $('#unlockBtn'), spiritEl = $('#spirit'), bubbleEl = $('#bubble');
+const titleEl = $('#title'), bannerEl = $('#banner'), resetBtn = $('#resetBtn');
+
+/* =====  card-style ribbon (same geometry as the printed clue-card ribbons)  ===== */
+function makeRibbon(el) {
+  const bw = +el.dataset.bw, bh = +el.dataset.bh, fs = +el.dataset.fs;
+  const tail = bh * .95, drop = bh * .3, notch = bh * .32, fold = bh * .42, m = 6;
+  const W = bw + 2 * tail + 2 * m, H = bh + drop + 2 * m, x0 = m + tail, y0 = m, x1 = x0 + bw, y1 = y0 + bh;
+  const t0 = y0 + drop, t1 = y1 + drop, my = (t0 + t1) / 2, lw = Math.max(2.6, bh * .05), ins = bh * .13;
+  const P = a => a.map(p => p.map(v => v.toFixed(1)).join(',')).join(' ');
+  const svg = `<svg width="${W.toFixed(1)}" height="${H.toFixed(1)}" viewBox="0 0 ${W.toFixed(1)} ${H.toFixed(1)}" aria-hidden="true">` +
+    `<g stroke="#3a1408" stroke-width="${lw.toFixed(1)}" stroke-linejoin="round">` +
+    `<polygon fill="#96261a" points="${P([[x0 + fold, t0], [x0 - tail, t0], [x0 - tail + notch, my], [x0 - tail, t1], [x0 + fold, t1]])}"/>` +
+    `<polygon fill="#96261a" points="${P([[x1 - fold, t0], [x1 + tail, t0], [x1 + tail - notch, my], [x1 + tail, t1], [x1 - fold, t1]])}"/>` +
+    `<polygon fill="#5c140c" points="${P([[x0, y1], [x0 + fold, y1], [x0 + fold, t1]])}"/>` +
+    `<polygon fill="#5c140c" points="${P([[x1, y1], [x1 - fold, y1], [x1 - fold, t1]])}"/>` +
+    `<rect fill="#b83221" x="${x0.toFixed(1)}" y="${y0}" width="${bw}" height="${bh}"/></g>` +
+    `<rect fill="none" stroke="#e2b664" stroke-width="${Math.max(1.8, bh * .035).toFixed(1)}" x="${(x0 + ins).toFixed(1)}" y="${(y0 + ins).toFixed(1)}" width="${(bw - 2 * ins).toFixed(1)}" height="${(bh - 2 * ins).toFixed(1)}"/></svg>`;
+  el.insertAdjacentHTML('afterbegin', svg);
+  const sp = el.querySelector(':scope > span');
+  Object.assign(sp.style, {left: x0 + 'px', top: y0 + 'px', width: bw + 'px', height: bh + 'px', fontSize: fs + 'px', letterSpacing: '.14em', paddingLeft: '.14em'});
+  el.style.width = W + 'px'; el.style.height = H + 'px';
+}
+
+/* =====  sound (synthesised with Web Audio, no files needed)  ===== */
+const sfx = (() => {
+  let ac = null, master = null, verb = null, muted = false, amb = null;
+  function impulse(sec, decay) {
+    const n = Math.floor(ac.sampleRate * sec), b = ac.createBuffer(2, n, ac.sampleRate);
+    for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, decay); }
+    return b;
+  }
+  function init() {
+    if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    try { ac = new AC(); } catch (e) { return; }
+    master = ac.createGain(); master.gain.value = muted ? 0 : .8;
+    const comp = ac.createDynamicsCompressor(); master.connect(comp); comp.connect(ac.destination);
+    verb = ac.createConvolver(); verb.buffer = impulse(2.6, 2.4);
+    const vg = ac.createGain(); vg.gain.value = .5; verb.connect(vg); vg.connect(master);
+  }
+  function out(node, wet) { node.connect(master); if (wet) { const s = ac.createGain(); s.gain.value = wet; node.connect(s); s.connect(verb); } }
+  function tone(f, {t = 0, dur = .4, type = 'sine', vol = .2, a = .005, glide = 0, wet = 0} = {}) {
+    if (!ac) return;
+    const t0 = ac.currentTime + t, o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t0);
+    if (glide) o.frequency.exponentialRampToValueAtTime(glide, t0 + dur);
+    g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + a); g.gain.exponentialRampToValueAtTime(.0001, t0 + a + dur);
+    o.connect(g); out(g, wet); o.start(t0); o.stop(t0 + a + dur + .05);
+  }
+  function noise({t = 0, dur = .1, vol = .3, type = 'bandpass', f = 1500, q = 1, wet = 0} = {}) {
+    if (!ac) return;
+    const t0 = ac.currentTime + t, n = Math.max(1, Math.floor(ac.sampleRate * dur));
+    const b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    const s = ac.createBufferSource(); s.buffer = b;
+    const fl = ac.createBiquadFilter(); fl.type = type; fl.frequency.value = f; fl.Q.value = q;
+    const g = ac.createGain(); g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + .004); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+    s.connect(fl); fl.connect(g); out(g, wet); s.start(t0); s.stop(t0 + dur + .02);
+  }
+  const bell = (f, t = 0, vol = .15, wet = .6) => { tone(f, {t, dur: 1.8, vol, wet}); tone(f * 2.756, {t, dur: .7, vol: vol * .3, wet}); tone(f * 5.404, {t, dur: .35, vol: vol * .12, wet}); };
+  const C = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51, 1567.98];
+  return {
+    init,
+    get muted() { return muted; },
+    toggleMute() { muted = !muted; if (master) master.gain.setTargetAtTime(muted ? 0 : .8, ac.currentTime, .05); return muted; },
+    tick() { noise({dur: .03, vol: .35, f: 3400, q: 5}); tone(2100, {dur: .025, vol: .04, type: 'square'}); },
+    press() { tone(160, {dur: .14, type: 'triangle', vol: .3, glide: 110}); noise({dur: .07, f: 800, vol: .2}); },
+    blip() { tone(rand(780, 980), {dur: .04, vol: .025, type: 'triangle'}); },
+    whoosh() { noise({dur: .7, type: 'bandpass', f: 600, q: .7, vol: .25, wet: .3}); },
+    error() { tone(233, {dur: .2, type: 'sawtooth', vol: .1, glide: 196}); tone(174, {t: .2, dur: .38, type: 'sawtooth', vol: .1, glide: 123}); for (let k = 0; k < 6; k++) noise({t: k * .06, dur: .05, f: 2600, q: 7, vol: .22}); },
+    chime(i) { bell([523.25, 659.25, 783.99, 1046.5][i], 0, .2); },
+    chime2() { bell(pick([1046.5, 1318.51, 1567.98]), 0, .12, .7); },
+    unlock() { noise({dur: .06, f: 1500, q: 3, vol: .45}); tone(280, {dur: .16, type: 'square', vol: .07, glide: 840}); noise({t: .14, dur: .14, f: 700, q: 2, vol: .35}); bell(1567.98, .1, .08); },
+    chainClank() { for (let k = 0; k < 7; k++) noise({t: k * .07 + Math.random() * .03, dur: .07, f: rand(2200, 4200), q: 9, vol: .18, wet: .2}); },
+    chainBreak() { noise({dur: .12, f: 3000, q: 2, vol: .4}); for (let k = 0; k < 14; k++) noise({t: .05 + k * .045 + Math.random() * .03, dur: .07, f: rand(2400, 5200), q: 9, vol: .16, wet: .25}); },
+    thud() { tone(95, {dur: .45, vol: .55, glide: 42}); noise({dur: .3, type: 'lowpass', f: 380, q: .8, vol: .5}); },
+    rumble() { noise({dur: 1, type: 'lowpass', f: 160, q: 1, vol: .6}); tone(52, {dur: 1, type: 'sawtooth', vol: .05}); },
+    open() { tone(130, {dur: .7, type: 'sawtooth', vol: .05, glide: 240}); C.forEach((f, k) => bell(f, .2 + k * .06, .1, .8)); noise({dur: 1.6, type: 'highpass', f: 5000, q: .5, vol: .08, wet: .6}); },
+    fanfare() {
+      [[392, 0], [523.25, .16], [659.25, .32], [783.99, .48]].forEach(([f, t]) => { tone(f, {t: .8 + t, dur: .22, type: 'sawtooth', vol: .055, wet: .3}); tone(f * 2, {t: .8 + t, dur: .22, type: 'triangle', vol: .05, wet: .3}); });
+      [523.25, 659.25, 783.99, 1046.5].forEach(f => { tone(f, {t: 1.5, dur: 2, type: 'sawtooth', vol: .04, wet: .5}); tone(f / 2, {t: 1.5, dur: 2, type: 'triangle', vol: .05, wet: .5}); });
+    },
+    coin() { const f = rand(1900, 3200); tone(f, {dur: .1, vol: .04, wet: .2}); tone(f * 1.5, {t: .05, dur: .12, vol: .03, wet: .2}); },
+    sparkle() { [0, .07, .14].forEach((t, k) => bell(C[4 + k] * (Math.random() < .5 ? 1 : 1.5), t, .06, .9)); },
+    ambient(on, bright) {
+      if (!ac) return;
+      if (amb) { clearInterval(amb.timer); amb.g.gain.setTargetAtTime(.0001, ac.currentTime, .6); const old = amb; setTimeout(() => old.osc.forEach(o => { try { o.stop(); } catch (e) {} }), 2500); amb = null; }
+      if (!on) return;
+      const g = ac.createGain(); g.gain.value = .0001; g.gain.setTargetAtTime(bright ? .035 : .045, ac.currentTime, 1.2);
+      const fl = ac.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = 650; fl.connect(g); g.connect(master);
+      const osc = (bright ? [261.63, 329.63, 392] : [196, 246.94, 293.66]).map(f => { const o = ac.createOscillator(); o.type = 'triangle'; o.frequency.value = f; o.detune.value = rand(-8, 8); o.connect(fl); o.start(); return o; });
+      const lfo = ac.createOscillator(), lg = ac.createGain(); lfo.frequency.value = .08; lg.gain.value = 260; lfo.connect(lg); lg.connect(fl.frequency); lfo.start(); osc.push(lfo);
+      const scale = bright ? [1046.5, 1174.66, 1318.51, 1567.98, 1760, 2093] : [587.33, 659.25, 783.99, 880, 987.77, 1174.66];
+      const timer = setInterval(() => { if (!muted && document.visibilityState === 'visible') bell(pick(scale), 0, bright ? .045 : .035, .9); }, bright ? 1100 : 1700);
+      amb = {g, osc, timer};
+    },
+  };
+})();
+
+/* =====  layout  ===== */
+let L = LAYOUTS.L, S = 1, OX = 0, OY = 0, geo = {}, chainsBroken = false;
+function place(el, x, y, w, h) { el.style.left = x + 'px'; el.style.top = y + 'px'; if (w != null) el.style.width = w + 'px'; if (h != null) el.style.height = h + 'px'; }
+function layout() {
+  const portrait = innerHeight > innerWidth * 1.08;
+  L = LAYOUTS[portrait ? 'P' : 'L'];
+  stage.style.width = L.W + 'px'; stage.style.height = L.H + 'px';
+  S = Math.min(innerWidth / L.W, innerHeight / L.H);
+  OX = (innerWidth - L.W * S) / 2; OY = (innerHeight - L.H * S) / 2;
+  stage.style.transform = `translate(${OX}px,${OY}px) scale(${S})`;
+  const w = L.chest.w, h = CHEST.h * w / CHEST.w;
+  const x = L.chest.cx - CHEST.centerX[0] * w, y = L.chest.bottom - CHEST.bottom[1] * h;
+  geo = {x, y, w, h, bottom: L.chest.bottom, cx: L.chest.cx,
+         inside: [x + CHEST.inside[0] * w, y + CHEST.inside[1] * h],
+         chainL: [x + CHEST.chainL[0] * w, y + CHEST.chainL[1] * h],
+         chainR: [x + CHEST.chainR[0] * w, y + CHEST.chainR[1] * h]};
+  place(chestBox, x, y, w, h);
+  place($('#chestShadow'), geo.cx - w * .5, L.chest.bottom - 30, w, 56);
+  const cd = w * 1.25; place(circleEl, geo.cx - cd / 2, L.chest.bottom - 10 - cd / 2, cd, cd);
+  const rd = w * 1.7; place($('#rays'), geo.inside[0] - rd / 2, geo.inside[1] - rd / 2, rd, rd);
+  const gd = w * .85; place($('#glow'), geo.inside[0] - gd / 2, geo.inside[1] - gd / 2, gd, gd);
+  const ls = L.lock.s;
+  geo.lockX = L.lock.cx - LOCK_W / 2; geo.lockY = L.lock.top - SHACKLE_VIS * ls;
+  $('#lockScale').style.transform = `scale(${ls})`;
+  geo.shackleTop = [L.lock.cx, geo.lockY + 16 * ls];
+  place(lockEl, geo.lockX, geo.lockY);
+  place(unlockBtn, L.btn.x - unlockBtn.offsetWidth / 2, L.btn.y - unlockBtn.offsetHeight / 2);
+  titleEl.style.top = L.title + 'px'; bannerEl.style.top = L.title + 'px';
+  place(spiritEl, L.spirit.x, L.spirit.y, L.spirit.w);
+  const b = L.bubble;
+  bubbleEl.dataset.side = b.side; bubbleEl.style.left = b.x + 'px'; bubbleEl.style.width = b.w + 'px';
+  if (b.side === 'bottom') { bubbleEl.style.top = 'auto'; bubbleEl.style.bottom = (L.H - b.bottom) + 'px'; }
+  else { bubbleEl.style.bottom = 'auto'; bubbleEl.style.top = b.top + 'px'; }
+  bubbleEl.style.setProperty('--tail', b.tail + 'px');
+  $('#virtues').style.top = L.virtues + 'px';
+  $('#scrollWrap').style.transform = `scale(${L.scroll})`;
+  fx.resize();
+  if (chainsBroken) chainsSvg.innerHTML = ''; else buildChains();
+}
+const toStage = (cx, cy) => [(cx - OX) / S, (cy - OY) / S];
+const centerOf = el => { const r = el.getBoundingClientRect(); return toStage(r.left + r.width / 2, r.top + r.height / 2); };
+
+/* =====  magic circle made of the 27 cipher signs  ===== */
+function buildCircle() {
+  let s = '<svg viewBox="-520 -520 1040 1040">';
+  s += '<circle r="500" fill="none" stroke="currentColor" stroke-width="6"/>';
+  s += '<circle r="470" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="18 12" opacity=".8"/>';
+  s += '<circle r="330" fill="none" stroke="currentColor" stroke-width="4" opacity=".9"/>';
+  s += '<circle r="300" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".6"/>';
+  const pts = [];
+  for (let k = 0; k < 16; k++) { const r = k % 2 ? 132 : 300, a = k * Math.PI / 8 - Math.PI / 2; pts.push(`${(r * Math.cos(a)).toFixed(1)},${(r * Math.sin(a)).toFixed(1)}`); }
+  s += `<polygon points="${pts.join(' ')}" fill="none" stroke="currentColor" stroke-width="3" opacity=".75"/>`;
+  s += '<rect x="-212" y="-212" width="424" height="424" fill="none" stroke="currentColor" stroke-width="2" opacity=".5"/>';
+  s += '<rect x="-212" y="-212" width="424" height="424" transform="rotate(45)" fill="none" stroke="currentColor" stroke-width="2" opacity=".5"/>';
+  SIGNS.forEach(([, , inner], k) => {
+    s += `<g transform="rotate(${(k / SIGNS.length * 360).toFixed(2)}) translate(0 -400) scale(2.3) translate(-12 -12)" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${inner}</g>`;
+  });
+  for (let k = 0; k < 108; k++) {
+    const a = k / 108 * 2 * Math.PI, r1 = 482, r2 = k % 4 ? 490 : 499;
+    s += `<line x1="${(r1 * Math.cos(a)).toFixed(1)}" y1="${(r1 * Math.sin(a)).toFixed(1)}" x2="${(r2 * Math.cos(a)).toFixed(1)}" y2="${(r2 * Math.sin(a)).toFixed(1)}" stroke="currentColor" stroke-width="2" opacity=".7"/>`;
+  }
+  $('#circle .tilt').innerHTML = s + '</svg>';
+}
+
+/* =====  chains (cartoon links with ink outlines)  ===== */
+let links = [], chainAnim = null;
+function buildChains() {
+  cancelAnimationFrame(chainAnim); chainAnim = null;
+  chainsSvg.setAttribute('viewBox', `0 0 ${L.W} ${L.H}`);
+  links = [];
+  const [bx, by] = geo.shackleTop;
+  for (const [ax, ay] of [geo.chainL, geo.chainR]) {
+    const mx = (ax + bx) / 2, my = Math.max(ay, by) + 44;
+    const n = Math.max(6, Math.round(Math.hypot(bx - ax, by - ay) * 1.08 / 23));
+    for (let j = 0; j <= n; j++) {
+      const t = j / n, u = 1 - t;
+      const x = u * u * ax + 2 * u * t * mx + t * t * bx, y = u * u * ay + 2 * u * t * my + t * t * by;
+      const a = Math.atan2(2 * u * (my - ay) + 2 * t * (by - my), 2 * u * (mx - ax) + 2 * t * (bx - mx)) * 180 / Math.PI;
+      links.push({x, y, a, odd: j % 2 === 1});
+    }
+  }
+  chainsSvg.innerHTML = links.map((l, k) => `<g data-k="${k}" transform="translate(${l.x.toFixed(1)} ${l.y.toFixed(1)}) rotate(${l.a.toFixed(1)})">` +
+    (l.odd ? '<rect x="-15" y="-4.2" width="30" height="8.4" rx="4.2" fill="#9c8f78" stroke="#2e1d0e" stroke-width="2.4"/><line x1="-9" y1="-1.4" x2="9" y2="-1.4" stroke="#d9cfb8" stroke-width="1.6" stroke-linecap="round"/>'
+           : '<ellipse rx="15.5" ry="9.4" fill="none" stroke="#2e1d0e" stroke-width="8.6"/><ellipse rx="15.5" ry="9.4" fill="none" stroke="#b3a68c" stroke-width="4.4"/><path d="M-11 -5.5 A13 7 0 0 1 5 -8" fill="none" stroke="#e8e0cc" stroke-width="1.8" stroke-linecap="round"/>') + '</g>').join('');
+  links.forEach((l, k) => { l.el = chainsSvg.querySelector(`g[data-k="${k}"]`); });
+}
+function breakChains() {
+  chainsBroken = true;
+  const [cx, cy] = geo.shackleTop;
+  links.forEach(l => { const dir = Math.sign(l.x - cx) || 1; l.vx = dir * rand(1, 5.5) + rand(-1.5, 1.5); l.vy = rand(-8, -2); l.va = rand(-14, 14); l.life = 0; });
+  let last = performance.now();
+  const tick = now => {
+    const dt = Math.min(2.5, (now - last) / 16.67); last = now;
+    let alive = false;
+    for (const l of links) {
+      l.life += dt; l.vy += .55 * dt; l.x += l.vx * dt; l.y += l.vy * dt; l.a += l.va * dt;
+      const op = Math.max(0, 1 - Math.max(0, l.life - 40) / 30);
+      if (op > 0 && l.y < L.H + 40) alive = true;
+      l.el.setAttribute('transform', `translate(${l.x.toFixed(1)} ${l.y.toFixed(1)}) rotate(${l.a.toFixed(1)})`);
+      l.el.setAttribute('opacity', op.toFixed(2));
+    }
+    chainAnim = alive ? requestAnimationFrame(tick) : null;
+  };
+  chainAnim = requestAnimationFrame(tick);
+  fx.sparkBurst([cx, cy], 26);
+}
+
+/* =====  particles: drifting leaves + sun motes (back), coins / gems / stars / confetti (front)  ===== */
+const fx = (() => {
+  const back = $('#fxBack'), front = $('#fxFront'), bctx = back.getContext('2d'), fctx = front.getContext('2d');
+  let dpr = 1, amb = [], parts = [], emitters = [], sparkles = false, last = performance.now(), T = 0;
+  const sp = {}, INK = '#3a2210';
+  const sprite = (size, draw) => { const c = document.createElement('canvas'); c.width = c.height = size; draw(c.getContext('2d'), size / 2); return c; };
+  function sprites() {
+    sp.leaves = ['#9aa53e', '#c9a13a', '#c46a2c', '#7f9a46', '#d9b24a'].map(col => sprite(64, (g, c) => {
+      g.translate(c, c); g.rotate(-.5);
+      g.beginPath(); g.moveTo(-27, 0); g.quadraticCurveTo(-4, -19, 27, 0); g.quadraticCurveTo(-4, 19, -27, 0); g.closePath();
+      g.fillStyle = col; g.fill(); g.lineWidth = 2.6; g.strokeStyle = INK; g.lineJoin = 'round'; g.stroke();
+      g.beginPath(); g.moveTo(-25, 0); g.lineTo(22, 0); g.lineWidth = 1.6; g.stroke();
+      g.globalAlpha = .35; g.fillStyle = '#fff6d8'; g.beginPath(); g.ellipse(-2, -6, 11, 3.6, -.12, 0, 7); g.fill();
+    }));
+    sp.mote = sprite(32, (g, c) => { const r = g.createRadialGradient(c, c, 0, c, c, c); r.addColorStop(0, 'rgba(255,253,236,.95)'); r.addColorStop(.35, 'rgba(255,238,175,.55)'); r.addColorStop(1, 'rgba(255,222,130,0)'); g.fillStyle = r; g.fillRect(0, 0, 2 * c, 2 * c); });
+    sp.coin = sprite(64, (g, c) => {
+      g.beginPath(); g.arc(c, c, 28, 0, 7); g.fillStyle = '#f4c443'; g.fill(); g.lineWidth = 4; g.strokeStyle = '#5a3a10'; g.stroke();
+      g.beginPath(); g.arc(c, c, 19.5, 0, 7); g.lineWidth = 2.5; g.strokeStyle = '#c98a1e'; g.stroke();
+      g.fillStyle = '#b97c16'; g.font = '700 19px Cinzel, serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('82', c, c + 1.5);
+      g.beginPath(); g.arc(c, c, 23.5, 3.5, 4.7); g.lineWidth = 3.4; g.lineCap = 'round'; g.strokeStyle = 'rgba(255,250,226,.95)'; g.stroke();
+    });
+    const gem = (col, light, dark) => sprite(64, (g, c) => {
+      g.translate(c, c); const p = [[0, -26], [21, -11], [21, 11], [0, 26], [-21, 11], [-21, -11]];
+      const path = () => { g.beginPath(); p.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); };
+      path(); g.fillStyle = col; g.fill();
+      g.fillStyle = dark; g.beginPath(); g.moveTo(0, 26); g.lineTo(21, 11); g.lineTo(21, -11); g.lineTo(0, 0); g.closePath(); g.fill();
+      g.fillStyle = light; g.beginPath(); g.moveTo(0, -26); g.lineTo(-21, -11); g.lineTo(-6, -4); g.lineTo(8, -16); g.closePath(); g.fill();
+      path(); g.lineWidth = 3.4; g.strokeStyle = INK; g.lineJoin = 'round'; g.stroke();
+    });
+    sp.gems = [gem('#d23a48', '#ffb8bd', '#951c2a'), gem('#2f6fd0', '#bad6ff', '#1b4390'), gem('#2f9a58', '#b2ecc4', '#1b6838'), gem('#8e44c4', '#dfbef7', '#5c2888')];
+    sp.star = sprite(64, (g, c) => {
+      g.translate(c, c); g.beginPath();
+      for (let k = 0; k < 8; k++) { const r = k % 2 ? 8 : 28, a = k * Math.PI / 4 - Math.PI / 2; g.lineTo(r * Math.cos(a), r * Math.sin(a)); }
+      g.closePath(); g.fillStyle = '#ffd448'; g.fill(); g.lineWidth = 3; g.strokeStyle = '#86500f'; g.lineJoin = 'round'; g.stroke();
+      g.fillStyle = '#fffbe6'; g.beginPath(); g.arc(0, 0, 5, 0, 7); g.fill();
+    });
+    sp.dust = sprite(64, (g, c) => { const r = g.createRadialGradient(c, c, 0, c, c, c); r.addColorStop(0, 'rgba(228,208,170,.8)'); r.addColorStop(.6, 'rgba(214,190,148,.45)'); r.addColorStop(1, 'rgba(200,176,130,0)'); g.fillStyle = r; g.fillRect(0, 0, 2 * c, 2 * c); });
+  }
+  const newLeaf = anywhere => ({type: 'leaf', x: rand(-40, L.W + 40), y: anywhere ? rand(-40, L.H) : rand(-140, -30), size: rand(22, 36),
+                                rot: rand(0, 6.28), vr: rand(-.02, .02), vy: rand(.35, .8), vx: rand(-.25, .25), sw: rand(0, 6.28), img: pick(sp.leaves)});
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    for (const c of [back, front]) { c.style.width = L.W + 'px'; c.style.height = L.H + 'px'; c.width = Math.max(1, Math.round(L.W * S * dpr)); c.height = Math.max(1, Math.round(L.H * S * dpr)); }
+    if (!amb.length || amb.W !== L.W) {
+      amb = [];
+      for (let k = 0; k < 12; k++) amb.push(newLeaf(true));
+      for (let k = 0; k < 26; k++) amb.push({type: 'mote', x: rand(0, L.W), y: rand(L.H * .1, L.H), r: rand(6, 15), ph: rand(0, 6.28), s: rand(.15, .4), dir: rand(0, 6.28)});
+      amb.W = L.W;
+    }
+  }
+  const add = p => parts.push(Object.assign({rot: 0, vr: 0, g: .35, drag: .995, life: 0, max: 200}, p));
+  function fountain() {
+    emitters.push({t: 0, dur: 130, rate: 2.6, fn: () => {
+      const [x, y] = geo.inside, r = Math.random();
+      const b = {x: x + rand(-120, 120), y: y + rand(-10, 30), vx: rand(-8.5, 8.5), vy: rand(-15.5, -7), max: 240};
+      if (r < .55) add(Object.assign(b, {type: 'coin', size: rand(26, 38), vr: rand(.08, .25)}));
+      else if (r < .82) add(Object.assign(b, {type: 'gem', img: pick(sp.gems), size: rand(24, 34), vr: rand(-.2, .2)}));
+      else add(Object.assign(b, {type: 'star', size: rand(26, 46), g: .12, drag: .98, vr: rand(-.1, .1), max: 70}));
+      if (Math.random() < .4) sfx.coin();
+    }});
+  }
+  function confetti() {
+    emitters.push({t: 0, dur: 220, rate: 1.5, fn: () => {
+      const t = pick(TEAMS);
+      add({type: 'conf', x: rand(0, L.W), y: -20, vx: rand(-1.5, 1.5), vy: rand(2, 5), g: .05, drag: .99, color: Math.random() < .8 ? t.c : '#f2c94c',
+           w: rand(10, 18), h: rand(6, 10), rot: rand(0, 6.28), vr: rand(-.15, .15), sway: rand(0, 6.28), max: 620});
+    }});
+  }
+  function sparkBurst([x, y], n) {
+    for (let k = 0; k < n; k++) { const a = rand(0, 6.28), v = rand(2, 8.5); add({type: 'star', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, g: .05, drag: .94, size: rand(16, 34), vr: rand(-.12, .12), max: rand(30, 55)}); }
+  }
+  function dust() {
+    for (let k = 0; k < 42; k++) {
+      const side = Math.random() < .5 ? -1 : 1;
+      add({type: 'dust', x: geo.cx + side * rand(geo.w * .22, geo.w * .5), y: geo.bottom + rand(-10, 6), vx: side * rand(1, 5), vy: rand(-2.2, -.3), g: -.01, drag: .96, size: rand(40, 90), max: rand(50, 90)});
+    }
+  }
+  function frame(now) {
+    const dt = Math.min(2.5, (now - last) / 16.67); last = now; T += dt;
+    bctx.setTransform(S * dpr, 0, 0, S * dpr, 0, 0); bctx.clearRect(0, 0, L.W, L.H);
+    for (const a of amb) {
+      if (a.type === 'leaf') {
+        a.sw += .02 * dt; a.x += (a.vx + Math.sin(a.sw) * .6) * dt; a.y += a.vy * dt; a.rot += (a.vr + Math.sin(a.sw) * .004) * dt;
+        if (a.y > L.H + 40 || a.x < -80 || a.x > L.W + 80) Object.assign(a, newLeaf(false));
+        bctx.globalAlpha = .92; bctx.save(); bctx.translate(a.x, a.y); bctx.rotate(a.rot); bctx.scale(1, .5 + .5 * Math.abs(Math.cos(a.sw * 1.3)));
+        bctx.drawImage(a.img, -a.size / 2, -a.size / 2, a.size, a.size); bctx.restore();
+      } else {
+        a.dir += rand(-.05, .05) * dt; a.x += Math.cos(a.dir) * a.s * dt; a.y += Math.sin(a.dir) * a.s * dt - .08 * dt;
+        if (a.x < -20) a.x = L.W + 20; if (a.x > L.W + 20) a.x = -20; if (a.y < L.H * .08) a.y = L.H + 10; if (a.y > L.H + 20) a.y = L.H * .2;
+        bctx.globalAlpha = .2 + .65 * Math.max(0, Math.sin(T * .03 + a.ph));
+        bctx.drawImage(sp.mote, a.x - a.r, a.y - a.r, 2 * a.r, 2 * a.r);
+      }
+    }
+    bctx.globalAlpha = 1;
+    for (const e of emitters) { e.t += dt; if (e.t < e.dur) { e.acc = (e.acc || 0) + e.rate * (1 - e.t / e.dur) * dt; while (e.acc >= 1) { e.fn(); e.acc -= 1; } } }
+    emitters = emitters.filter(e => e.t < e.dur);
+    if (sparkles && Math.random() < .25 * dt) {
+      const [x, y] = geo.inside;
+      add({type: 'star', x: x + rand(-170, 170), y: y + rand(-20, 40), vx: rand(-.4, .4), vy: rand(-2.2, -.8), g: -.01, drag: .99, size: rand(14, 28), vr: rand(-.05, .05), max: rand(60, 110)});
+    }
+    fctx.setTransform(S * dpr, 0, 0, S * dpr, 0, 0); fctx.clearRect(0, 0, L.W, L.H);
+    for (const p of parts) {
+      p.life += dt; p.vy += p.g * dt; const dr = Math.pow(p.drag, dt); p.vx *= dr; p.vy *= dr; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+      const fade = Math.min(1, (p.max - p.life) / 20); if (fade <= 0) continue;
+      fctx.globalAlpha = fade;
+      fctx.save(); fctx.translate(p.x, p.y);
+      if (p.type === 'coin') { fctx.scale(Math.max(.12, Math.abs(Math.cos(p.rot * 2))), 1); fctx.drawImage(sp.coin, -p.size / 2, -p.size / 2, p.size, p.size); }
+      else if (p.type === 'gem') { fctx.rotate(p.rot); fctx.drawImage(p.img, -p.size / 2, -p.size / 2, p.size, p.size); }
+      else if (p.type === 'star') { fctx.rotate(p.rot); const s = p.size * (.7 + .3 * Math.sin(p.life * .3)); fctx.drawImage(sp.star, -s / 2, -s / 2, s, s); }
+      else if (p.type === 'dust') { const s = p.size * (1 + p.life / 60); fctx.drawImage(sp.dust, -s / 2, -s / 2, s, s); }
+      else if (p.type === 'conf') { p.sway += .08 * dt; p.x += Math.sin(p.sway) * .8 * dt; fctx.rotate(p.rot); fctx.scale(1, Math.cos(p.sway * 1.7)); fctx.fillStyle = p.color; fctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); }
+      fctx.restore();
+    }
+    parts = parts.filter(p => p.life < p.max && p.y < L.H + 80);
+    fctx.globalAlpha = 1;
+    requestAnimationFrame(frame);
+  }
+  return {sprites, resize, fountain, confetti, sparkBurst, dust, sparkles(on) { sparkles = on; }, clear() { parts = []; emitters = []; sparkles = false; },
+          start() { last = performance.now(); requestAnimationFrame(frame); }};
+})();
+
+/* =====  dials  ===== */
+const CELL = 92, WIN = 149, BASE_IDX = 20;          // WIN = inner height of a dial window
+const strips = [], pos = [], dialEls = [], touched = new Set();
+let focusIdx = -1, started = false, busy = false, solved = false, attempts = 0;
+const canInput = () => started && !busy && !solved;
+const val = i => 9 - (((pos[i] % 10) + 10) % 10);
+function setPos(i, p, anim = true) {
+  if (anim && (p < 6 || p > 43)) {               // keep the strip away from its ends (visually identical jump)
+    const shift = Math.round((p - 25) / 10) * 10;
+    pos[i] -= shift; p -= shift;
+    strips[i].style.transition = 'none';
+    strips[i].style.transform = `translateY(${WIN / 2 - CELL / 2 - pos[i] * CELL}px)`;
+    void strips[i].offsetWidth;
+  }
+  pos[i] = p;
+  strips[i].style.transition = anim ? 'transform .3s cubic-bezier(.3,1.45,.5,1)' : 'none';
+  strips[i].style.transform = `translateY(${WIN / 2 - CELL / 2 - p * CELL}px)`;
+}
+function normalize(i) { const target = BASE_IDX + 9 - val(i); if (pos[i] !== target) setPos(i, target, false); }
+function focusDial(i) { focusIdx = i; dialEls.forEach((d, j) => d.classList.toggle('focus', j === i)); }
+function updateReady() { unlockBtn.classList.toggle('ready', touched.size === 4 && canInput()); }
+function input(i, d) {
+  if (!canInput()) return;
+  sfx.init(); focusDial(i); setPos(i, pos[i] - d); sfx.tick(); touched.add(i); updateReady();
+}
+function setDigit(i, v) {
+  let delta = ((v - val(i)) % 10 + 10) % 10; if (delta > 5) delta -= 10;
+  setPos(i, pos[i] - delta); sfx.tick(); touched.add(i);
+}
+function buildDials() {
+  const box = $('#dials');
+  TEAMS.forEach((t, i) => {
+    const d = document.createElement('div');
+    d.className = 'dial'; d.dataset.k = t.k;
+    d.style.setProperty('--tc', t.c); d.style.setProperty('--td', t.d); d.style.setProperty('--tr', t.r); d.style.setProperty('--to', t.o);
+    d.innerHTML = `<button class="arrow up" aria-label="${t.n}加一">${icon('chevron-up')}</button>` +
+      `<div class="win" role="spinbutton" aria-label="${t.n}轉輪"><div class="strip">${Array.from({length: 50}, (_, j) => `<span>${9 - j % 10}</span>`).join('')}</div></div>` +
+      `<button class="arrow down" aria-label="${t.n}減一">${icon('chevron-down')}</button><div class="tname">${t.n}</div>`;
+    box.appendChild(d); dialEls.push(d);
+    const strip = d.querySelector('.strip'), win = d.querySelector('.win');
+    strips.push(strip); pos.push(0); setPos(i, BASE_IDX + 9, false);
+    strip.addEventListener('transitionend', () => normalize(i));
+    d.querySelector('.up').addEventListener('click', () => input(i, +1));
+    d.querySelector('.down').addEventListener('click', () => input(i, -1));
+    let drag = null, wheel = 0;
+    win.addEventListener('pointerdown', e => {
+      if (!canInput()) return;
+      e.preventDefault(); try { win.setPointerCapture(e.pointerId); } catch (err) {}
+      drag = {y: e.clientY, moved: false}; focusDial(i); sfx.init();
+    });
+    win.addEventListener('pointermove', e => {
+      if (!drag) return;
+      const step = 44 * S * L.lock.s, n = Math.trunc((e.clientY - drag.y) / step);
+      if (n) { for (let k = 0; k < Math.abs(n); k++) input(i, Math.sign(n)); drag.y += n * step; drag.moved = true; }
+    });
+    win.addEventListener('pointerup', e => {
+      if (drag && !drag.moved) { const r = win.getBoundingClientRect(); input(i, e.clientY < r.top + r.height / 2 ? +1 : -1); }
+      drag = null;
+    });
+    win.addEventListener('pointercancel', () => { drag = null; });
+    win.addEventListener('wheel', e => {
+      e.preventDefault(); if (!canInput()) return;
+      wheel += e.deltaY; if (Math.abs(wheel) > 40) { input(i, wheel > 0 ? -1 : +1); wheel = 0; }
+    }, {passive: false});
+  });
+}
+
+/* =====  spirit speech  ===== */
+let sayTimer = null, tipIdx = 0;
+function say(text) {
+  clearInterval(sayTimer);
+  const el = $('#bubbleText'), chars = [...text];
+  bubbleEl.classList.remove('pre'); restart(bubbleEl, 'pop');
+  let i = 0; el.textContent = '';
+  sayTimer = setInterval(() => {
+    i++; el.textContent = chars.slice(0, i).join('');
+    if (i % 3 === 1) sfx.blip();
+    if (i >= chars.length) clearInterval(sayTimer);
+  }, 42);
+}
+
+/* =====  game flow  ===== */
+async function start() {
+  if (started) return;
+  started = true; stage.classList.add('started'); sfx.init(); sfx.whoosh(); sfx.ambient(true, false);
+  $('#intro').classList.add('hide');
+  await wait(500);
+  chestBox.classList.remove('pre'); chestBox.classList.add('drop'); $('#chestShadow').classList.remove('pre');
+  await wait(560); sfx.thud(); fx.dust();
+  await wait(480);
+  chainsSvg.classList.remove('pre'); sfx.chainClank();
+  lockEl.classList.remove('pre'); restart(lockEl, 'enter');
+  await wait(800);
+  spiritEl.classList.remove('pre'); sfx.sparkle(); fx.sparkBurst(centerOf(spiritEl), 22);
+  unlockBtn.classList.remove('pre');
+  await wait(450);
+  say(INTRO_MSG); focusDial(0);
+}
+async function tryUnlock() {
+  if (!canInput()) return;
+  busy = true; sfx.init(); sfx.press(); unlockBtn.classList.remove('ready'); focusDial(-1);
+  await wait(320);
+  const code = [0, 1, 2, 3].map(val).join('');
+  if (code === PASSCODE) { await success(); return; }
+  attempts++;
+  sfx.error();
+  restart(lockEl, 'shake'); dialEls.forEach(d => restart(d, 'bad')); restart(chainsSvg, 'rattle');
+  circleEl.classList.add('bad');
+  say(attempts >= 3 ? HINTS[(attempts - 3) % HINTS.length] : WRONG[(attempts - 1) % WRONG.length]);
+  await wait(950);
+  circleEl.classList.remove('bad'); lockEl.classList.remove('shake'); dialEls.forEach(d => d.classList.remove('bad'));
+  busy = false; updateReady();
+}
+async function success() {
+  solved = true;
+  say('封印正在解除……！');
+  for (let i = 0; i < 4; i++) { dialEls[i].classList.add('ok'); sfx.chime(i); fx.sparkBurst(centerOf(dialEls[i].querySelector('.win')), 12); await wait(380); }
+  await wait(250);
+  lockEl.classList.add('open'); sfx.unlock(); circleEl.classList.add('gold');
+  await wait(750);
+  breakChains(); sfx.chainBreak();
+  await wait(280);
+  lockEl.classList.add('drop'); unlockBtn.classList.add('hide');
+  await wait(650); sfx.thud();
+  chestBox.classList.add('rumble'); sfx.rumble(); fx.dust();
+  await wait(950);
+  chestBox.classList.remove('rumble', 'drop');
+  const f = $('#flash'); f.style.setProperty('--fx', geo.inside[0] / L.W * 100 + '%'); f.style.setProperty('--fy', geo.inside[1] / L.H * 100 + '%'); restart(f, 'go');
+  stage.classList.add('solved'); sfx.open(); sfx.fanfare(); fx.fountain(); fx.confetti(); fx.sparkles(true);
+  titleEl.classList.add('away');
+  await wait(700); bannerEl.classList.add('show');
+  await wait(900);
+  for (const v of document.querySelectorAll('.virtue')) { v.classList.add('show'); sfx.chime2(); await wait(380); }
+  say('第 82 旅的勇士們，你們做到了！四隊並肩作戰，成功找回傳奇寶藏！');
+  sfx.ambient(true, true);
+  setTimeout(() => resetBtn.classList.add('show'), 2500);
+}
+function reset() {
+  solved = false; busy = false; attempts = 0; touched.clear(); chainsBroken = false;
+  stage.classList.remove('solved');
+  lockEl.style.transition = 'none'; lockEl.classList.remove('open', 'drop', 'shake'); void lockEl.offsetWidth; lockEl.style.transition = '';
+  dialEls.forEach(d => d.classList.remove('ok', 'bad'));
+  [0, 1, 2, 3].forEach(i => setPos(i, BASE_IDX + 9, true));
+  circleEl.classList.remove('gold', 'bad');
+  unlockBtn.classList.remove('hide', 'ready');
+  titleEl.classList.remove('away'); bannerEl.classList.remove('show');
+  document.querySelectorAll('.virtue').forEach(v => v.classList.remove('show'));
+  resetBtn.classList.remove('show');
+  fx.clear(); buildChains(); restart(lockEl, 'enter'); sfx.chainClank(); sfx.ambient(true, false);
+  say(INTRO_MSG); focusDial(0);
+}
+
+/* =====  controls  ===== */
+function toggleFS() {
+  try {
+    const d = document, el = d.documentElement;
+    if (!d.fullscreenElement && !d.webkitFullscreenElement) { const p = (el.requestFullscreen || el.webkitRequestFullscreen).call(el); if (p && p.catch) p.catch(() => {}); }
+    else (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+  } catch (e) {}
+}
+function setCtlIcons() {
+  $('#muteBtn').innerHTML = icon(sfx.muted ? 'volume-x' : 'volume-2');
+  $('#fsBtn').innerHTML = icon(document.fullscreenElement || document.webkitFullscreenElement ? 'minimize' : 'maximize');
+}
+function init() {
+  unlockBtn.querySelector('.ic').outerHTML = icon('key-round');
+  document.querySelectorAll('.ribbon').forEach(makeRibbon);
+  const lr = $('#lockRibbon'); lr.style.left = (LOCK_W / 2 - lr.offsetWidth / 2) + 'px'; lr.style.top = (SHACKLE_VIS - 6 - 23 - 2) + 'px';
+  buildDials(); buildCircle(); fx.sprites();
+  $('#lockInner').addEventListener('animationend', e => { if (e.animationName === 'swingIn') lockEl.classList.remove('enter'); });
+  chestBox.addEventListener('animationend', e => { if (e.animationName === 'dropIn') chestBox.classList.remove('drop'); });
+  resetBtn.querySelector('.ic').innerHTML = icon('rotate-ccw');
+  $('#virtues').innerHTML = VIRTUES.map(([n, w]) => `<div class="virtue"><div class="medal">${icon(n)}</div><b>${w}</b></div>`).join('');
+  setCtlIcons(); layout(); fx.start();
+  $('#startBtn').addEventListener('click', start);
+  unlockBtn.addEventListener('click', tryUnlock);
+  $('#muteBtn').addEventListener('click', () => { sfx.init(); sfx.toggleMute(); setCtlIcons(); });
+  $('#fsBtn').addEventListener('click', toggleFS);
+  document.addEventListener('fullscreenchange', setCtlIcons); document.addEventListener('webkitfullscreenchange', setCtlIcons);
+  spiritEl.addEventListener('click', () => {
+    if (!started) return;
+    sfx.init(); restart(spiritEl, 'hop'); sfx.sparkle(); fx.sparkBurst(centerOf(spiritEl), 14);
+    say(solved ? pick(WIN_TALK) : TIPS[tipIdx++ % TIPS.length]);
+  });
+  let hold = null;
+  const endHold = () => { clearInterval(hold); hold = null; resetBtn.style.setProperty('--p', 0); };
+  resetBtn.addEventListener('pointerdown', e => {
+    e.preventDefault(); let p = 0; clearInterval(hold);
+    hold = setInterval(() => { p += 4; resetBtn.style.setProperty('--p', p); if (p >= 100) { endHold(); reset(); } }, 50);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => resetBtn.addEventListener(ev, endHold));
+  addEventListener('resize', layout);
+  addEventListener('keydown', e => {
+    if (e.repeat && e.key === 'Enter') return;
+    const k = e.key;
+    if (!started) { if (k === 'Enter' || k === ' ') { e.preventDefault(); start(); } return; }
+    if (k >= '0' && k <= '9') {
+      if (!canInput()) return;
+      sfx.init(); const i = focusIdx < 0 ? 0 : focusIdx; setDigit(i, +k); focusDial((i + 1) % 4); updateReady();
+    } else if (k === 'ArrowLeft') { e.preventDefault(); focusDial(Math.max(0, (focusIdx < 0 ? 1 : focusIdx) - 1)); }
+    else if (k === 'ArrowRight') { e.preventDefault(); focusDial(Math.min(3, focusIdx + 1)); }
+    else if (k === 'ArrowUp') { e.preventDefault(); input(focusIdx < 0 ? 0 : focusIdx, +1); }
+    else if (k === 'ArrowDown') { e.preventDefault(); input(focusIdx < 0 ? 0 : focusIdx, -1); }
+    else if (k === 'Backspace') { e.preventDefault(); focusDial(Math.max(0, (focusIdx < 0 ? 0 : focusIdx) - 1)); }
+    else if (k === 'Enter' || k === ' ') { e.preventDefault(); tryUnlock(); }
+    else if (k === 'm' || k === 'M') { sfx.init(); sfx.toggleMute(); setCtlIcons(); }
+    else if (k === 'f' || k === 'F') toggleFS();
+  });
+  const imgs = [...document.images].map(im => (im.decode ? im.decode() : Promise.resolve()).catch(() => {}));
+  Promise.race([Promise.all([document.fonts ? document.fonts.ready : null, ...imgs]), wait(2500)]).then(() => { fx.sprites(); layout(); stage.classList.add('shown'); });
+}
+init();
+})();
+</script>
+</body>
+</html>
